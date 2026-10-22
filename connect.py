@@ -1,10 +1,20 @@
-import mysql.connector
-def start_connection():
+import pymysql
 
-    return mysql.connector.connect(
-      host="sql102.infinityfree.com",
-      user="if0_43243910",
-      password="trabalhooficina",
-      database="if0_43243910_XXX"
+def start_connection():
+    return pymysql.connect(
+        host="gateway01.eu-central-1.prod.aws.tidbcloud.com",
+        user="cmE1xkqsg64fwEZ.root",
+        password="KRohaNQbP8ELovTW",
+        database="oficina",
+        port=4000,
+        ssl={"ssl": True}  # Ativa a segurança exigida pelo TiDB Cloud sem falhas de certificado
     )
-    d
+
+if __name__ == "__main__":
+    try:
+        conexao = start_connection()
+        if conexao.open:
+            print("[+] Ligação ao TiDB Cloud na nuvem bem-sucedida!")
+            conexao.close()
+    except Exception as e:
+        print(f"[-] Erro ao ligar à base de dados: {e}")
