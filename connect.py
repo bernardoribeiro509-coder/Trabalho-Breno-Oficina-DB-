@@ -2,7 +2,7 @@ import os
 import pymysql
 from dotenv import load_dotenv
 
-load_dotenv()  # lê o ficheiro .env e carrega as variáveis
+load_dotenv()
 
 def start_connection():
     return pymysql.connect(
