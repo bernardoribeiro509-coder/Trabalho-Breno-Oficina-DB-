@@ -1,4 +1,3 @@
-"""Acesso à base de dados. Todos os módulos da equipa usam este ficheiro."""
 from contextlib import contextmanager
 
 from pymysql.cursors import DictCursor
@@ -79,7 +78,6 @@ def criar_tabelas():
 
 
 def consultar(sql, params=(), um=False):
-    """SELECT. Devolve uma lista de dicionários (ou um só dicionário se um=True)."""
     conn = start_connection()
     try:
         with conn.cursor(DictCursor) as cur:
@@ -90,7 +88,6 @@ def consultar(sql, params=(), um=False):
 
 
 def executar(sql, params=()):
-    """INSERT/UPDATE/DELETE. Devolve o id gerado (lastrowid)."""
     conn = start_connection()
     try:
         with conn.cursor() as cur:
@@ -103,13 +100,6 @@ def executar(sql, params=()):
 
 @contextmanager
 def transacao():
-    """Para operações com vários passos (ex.: abater stock + registar peça usada).
-
-    with transacao() as cur:
-        cur.execute(...)
-        cur.execute(...)
-    Faz commit no fim, ou rollback se houver erro.
-    """
     conn = start_connection()
     try:
         with conn.cursor(DictCursor) as cur:

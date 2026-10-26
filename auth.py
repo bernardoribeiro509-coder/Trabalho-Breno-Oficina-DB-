@@ -1,4 +1,3 @@
-"""Autenticação, hash de passwords, permissões e criação do primeiro gestor."""
 import getpass
 import hashlib
 import hmac
@@ -18,7 +17,7 @@ class PermissaoNegada(ErroNegocio):
     pass
 
 
-# ---------- passwords ----------
+
 
 def hash_password(password):
     salt = os.urandom(16)
@@ -36,8 +35,6 @@ def verificar_password(password, guardado):
     return hmac.compare_digest(h.hex(), hash_hex)
 
 
-# ---------- permissões (usadas por todos os módulos) ----------
-
 def exigir_login(sessao):
     if sessao.get("utilizador") is None:
         raise PermissaoNegada("Tens de fazer login primeiro.")
@@ -45,14 +42,11 @@ def exigir_login(sessao):
 
 
 def exigir_role(sessao, *roles):
-    """Ex.: exigir_role(sessao, "ROLE_GESTOR"). Devolve o utilizador autenticado."""
     user = exigir_login(sessao)
     if user.ROLE not in roles:
         raise PermissaoNegada("Não tens permissão para esta operação.")
     return user
 
-
-# ---------- criar utilizadores ----------
 
 def criar_utilizador(username, password, nome, role):
     username = (username or "").strip()
@@ -72,7 +66,6 @@ def criar_utilizador(username, password, nome, role):
 
 
 def criar_primeiro_gestor():
-    """Se ainda não existe nenhum gestor, pede os dados no terminal do servidor."""
     existe = consultar(
         "SELECT id FROM utilizadores WHERE role=%s LIMIT 1", (Gestor.ROLE,), um=True
     )
@@ -90,8 +83,6 @@ def criar_primeiro_gestor():
         except ErroNegocio as e:
             print(f"[-] {e}")
 
-
-# ---------- ações chamadas pelo servidor ----------
 
 def login(dados, sessao):
     username = (dados.get("username") or "").strip()
