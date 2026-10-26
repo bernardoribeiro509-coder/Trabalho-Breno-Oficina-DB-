@@ -1,14 +1,32 @@
-import mysql.connector
-def start_connection():
+import os
+import pymysql
+from dotenv import load_dotenv
 
-    return mysql.connector.connect(
-      host="sql102.infinityfree.com",
-      user="if0_43243910",
-      password="trabalhooficina",
-      database="if0_43243910_XXX"
+load_dotenv()
+
+def start_connection():
+    return pymysql.connect(
+        host=os.environ["DB_HOST"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        database=os.environ["DB_NAME"],
+        port=int(os.environ["DB_PORT"]),
+        ssl={"ssl": True},
     )
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     d
 =======
 
 >>>>>>> Stashed changes
+=======
+
+if __name__ == "__main__":
+    try:
+        conexao = start_connection()
+        if conexao.open:
+            print("[+] Ligação ao TiDB Cloud bem-sucedida!")
+            conexao.close()
+    except Exception as e:
+        print(f"[-] Erro ao ligar à base de dados: {e}")
+>>>>>>> 3281c8fdd3f40b99ac96bacfc70e94d91ff73d9e
