@@ -7,4 +7,8 @@ def start_connection():
       password="trabalhooficina",
       database="if0_43243910_XXX"
     )
+<<<<<<< Updated upstream
     d
+=======
+
+>>>>>>> Stashed changes
