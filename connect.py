@@ -13,13 +13,7 @@ def start_connection():
         port=int(os.environ["DB_PORT"]),
         ssl={"ssl": True},
     )
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-    d
-=======
 
->>>>>>> Stashed changes
-=======
 
 if __name__ == "__main__":
     try:
@@ -29,4 +23,4 @@ if __name__ == "__main__":
             conexao.close()
     except Exception as e:
         print(f"[-] Erro ao ligar à base de dados: {e}")
->>>>>>> 3281c8fdd3f40b99ac96bacfc70e94d91ff73d9e
+
