@@ -14,15 +14,6 @@ def start_connection():
         ssl={"ssl": True},
     )
 
-c = start_connection(); cur = c.cursor()
-cur.execute("""CREATE TABLE IF NOT EXISTS faturas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    reparacao_id INT NOT NULL UNIQUE,
-    total DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (reparacao_id) REFERENCES reparacoes(id)
-)""")
-c.commit(); c.close()
-
 if __name__ == "__main__":
     try:
         conexao = start_connection()
