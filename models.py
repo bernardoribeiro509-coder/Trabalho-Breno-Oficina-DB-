@@ -16,3 +16,4 @@ class Mecanico(Utilizador):
 class Gestor(Utilizador):
     def __init__(self, id, nome, email):
         super().__init__(id, nome, email, "ROLE_GESTOR")
+
