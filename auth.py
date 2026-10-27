@@ -2,9 +2,10 @@ import getpass
 import hashlib
 import hmac
 import os
+from decimal import Decimal, InvalidOperation
 
 from db import consultar, executar
-from modelos import ROLES, Gestor, Cliente, Utilizador
+from modelos import ROLES, Cliente, Gestor, Utilizador
 
 ITERACOES = 200_000
 
@@ -17,7 +18,26 @@ class PermissaoNegada(ErroNegocio):
     pass
 
 
+# ---------- helpers de validação (usados pelos outros módulos) ----------
 
+def como_int(valor, campo):
+    try:
+        return int(valor)
+    except (TypeError, ValueError):
+        raise ErroNegocio(f"'{campo}' tem de ser um número inteiro.")
+
+
+def como_decimal(valor, campo):
+    try:
+        numero = Decimal(str(valor).replace(",", "."))
+    except (InvalidOperation, ValueError):
+        raise ErroNegocio(f"'{campo}' tem de ser um valor numérico.")
+    if numero < 0:
+        raise ErroNegocio(f"'{campo}' não pode ser negativo.")
+    return numero.quantize(Decimal("0.01"))
+
+
+# ---------- passwords ----------
 
 def hash_password(password):
     salt = os.urandom(16)
@@ -35,6 +55,8 @@ def verificar_password(password, guardado):
     return hmac.compare_digest(h.hex(), hash_hex)
 
 
+# ---------- sessão e permissões ----------
+
 def exigir_login(sessao):
     if sessao.get("utilizador") is None:
         raise PermissaoNegada("Tens de fazer login primeiro.")
@@ -47,6 +69,8 @@ def exigir_role(sessao, *roles):
         raise PermissaoNegada("Não tens permissão para esta operação.")
     return user
 
+
+# ---------- utilizadores ----------
 
 def criar_utilizador(username, password, nome, role):
     username = (username or "").strip()
@@ -66,6 +90,7 @@ def criar_utilizador(username, password, nome, role):
 
 
 def criar_primeiro_gestor():
+    """Chamado ao arrancar o servidor: se não houver gestores, cria o primeiro."""
     existe = consultar(
         "SELECT id FROM utilizadores WHERE role=%s LIMIT 1", (Gestor.ROLE,), um=True
     )
@@ -84,6 +109,8 @@ def criar_primeiro_gestor():
             print(f"[-] {e}")
 
 
+# ---------- ações (chamadas pelo servidor) ----------
+
 def login(dados, sessao):
     username = (dados.get("username") or "").strip()
     password = dados.get("password") or ""
@@ -92,12 +119,12 @@ def login(dados, sessao):
         raise ErroNegocio("Utilizador ou password incorretos.")
     user = Utilizador.de_linha(linha)
     sessao["utilizador"] = user
-    return {"role": user.ROLE, "utilizador": user.para_dict()}
+    return {"role": user.ROLE, "utilizador": user.para_dict(), "nome": user.nome}
 
 
 def logout(dados, sessao):
     sessao["utilizador"] = None
-    return {}
+    return {"mensagem": "Sessão terminada."}
 
 
 def registar_cliente(dados, sessao):

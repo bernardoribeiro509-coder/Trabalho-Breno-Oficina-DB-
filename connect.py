@@ -1,8 +1,5 @@
-import os
 import pymysql
-from dotenv import load_dotenv
 
-load_dotenv()
 
 def start_connection():
     return pymysql.connect(
@@ -14,6 +11,7 @@ def start_connection():
         ssl={"ssl": True},
     )
 
+
 if __name__ == "__main__":
     try:
         conexao = start_connection()
@@ -22,4 +20,3 @@ if __name__ == "__main__":
             conexao.close()
     except Exception as e:
         print(f"[-] Erro ao ligar à base de dados: {e}")
-

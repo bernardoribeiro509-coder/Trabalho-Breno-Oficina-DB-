@@ -1,140 +1,94 @@
+import json
 import socket
 import threading
-import json
-import hashlib
-from connect import start_connection
+from decimal import Decimal
 
-HOST = '0.0.0.0'
+import auth
+import faturas
+import funcionarios
+import pecas
+import veiculos
+from auth import ErroNegocio, criar_primeiro_gestor
+from db import criar_tabelas
+
+HOST = "0.0.0.0"
 PORT = 5000
 
-def fazer_hash(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+# Junta as ações de todos os módulos num único dicionário.
+# Quando houver um módulo de reparações, basta acrescentá-lo aqui.
+ACOES = {}
+for modulo in (auth, funcionarios, veiculos, pecas, faturas):
+    ACOES.update(modulo.ACOES)
 
-def verificar_primeiro_gestor():
-    conexao = start_connection()
-    cursor = conexao.cursor()
-    cursor.execute("SELECT COUNT(*) FROM utilizadores WHERE role = 'ROLE_GESTOR'")
-    count = cursor.fetchone()[0]
-    
-    if count == 0:
-        print("\n[!] Sistema sem gestores. Precisa de um Gestor primeiro:")
-        nome = input("Nome do primeiro Gestor: ")
-        email = input("Email do primeiro Gestor: ")
-        senha = input("Password do primeiro Gestor: ")
-        senha_hash = fazer_hash(senha)
-        
-        cursor.execute(
-            "INSERT INTO utilizadores (nome, email, senha, role) VALUES (%s, %s, %s, %s)",
-            (nome, email, senha_hash, 'ROLE_GESTOR')
-        )
-        conexao.commit()
-        print("Primeiro Gestor criado com sucesso na base de dados!\n")
-        
-    cursor.close()
-    conexao.close()
 
-def autenticar_utilizador(email, password):
-    conexao = start_connection()
-    cursor = conexao.cursor()
-    cursor.execute("SELECT id, nome, senha, role FROM utilizadores WHERE email = %s", (email,))
-    resultado = cursor.fetchone()
-    cursor.close()
-    conexao.close()
-    
-    if resultado:
-        user_id, nome, senha_hash, role = resultado
-        if senha_hash == fazer_hash(password):
-            return {"status": "sucesso", "role": role, "id": user_id, "nome": nome}
-            
-    return {"status": "erro", "mensagem": "Email ou password incorretos."}
+def _serializar(obj):
+    """Converte tipos que o JSON não conhece (Decimal, datas...)."""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    return str(obj)
 
-def gerir_funcionarios(acao, dados):
-    conexao = start_connection()
-    cursor = conexao.cursor()
-    try:
-        if acao == "ADICIONAR_FUNCIONARIO":
-            nome = dados.get("nome")
-            email = dados.get("email")
-            password = fazer_hash(dados.get("password"))
-            role = dados.get("tipo") 
-            
-            cursor.execute(
-                "INSERT INTO utilizadores (nome, email, senha, role) VALUES (%s, %s, %s, %s)",
-                (nome, email, password, role)
-            )
-            conexao.commit()
-            return {"status": "sucesso", "mensagem": "Funcionário adicionado com sucesso."}
-            
-        elif acao == "ATUALIZAR_FUNCIONARIO":
-            user_id = dados.get("id")
-            nome = dados.get("nome")
-            email = dados.get("email")
-            
-            cursor.execute(
-                "UPDATE utilizadores SET nome = %s, email = %s WHERE id = %s",
-                (nome, email, user_id)
-            )
-            conexao.commit()
-            return {"status": "sucesso", "mensagem": "Funcionário atualizado com sucesso."}
-            
-        elif acao == "REMOVER_FUNCIONARIO":
-            user_id = dados.get("id")
-            cursor.execute("DELETE FROM utilizadores WHERE id = %s", (user_id,))
-            conexao.commit()
-            return {"status": "sucesso", "mensagem": "Funcionário removido com sucesso."}
-            
-    except Exception as e:
-        return {"status": "erro", "mensagem": str(e)}
-    finally:
-        cursor.close()
-        conexao.close()
 
-def tratar_cliente(cliente_socket, endereco):
+def enviar(sock, resposta):
+    texto = json.dumps(resposta, default=_serializar, ensure_ascii=False)
+    sock.sendall((texto + "\n").encode("utf-8"))
+
+
+def processar(mensagem, sessao):
+    acao = mensagem.get("acao")
+    dados = mensagem.get("dados") or {}
+    funcao = ACOES.get(acao)
+    if funcao is None:
+        raise ErroNegocio(f"Ação '{acao}' não reconhecida.")
+    resultado = funcao(dados, sessao) or {}
+    return {"status": "sucesso", **resultado}
+
+
+def tratar_cliente(sock, endereco):
     print(f"[+] Cliente ligado: {endereco}")
+    sessao = {"utilizador": None}  # cada ligação tem a sua sessão
     try:
-        while True:
-            dados_brutos = cliente_socket.recv(4096)
-            if not dados_brutos:
-                break
-                
-            mensagem = json.loads(dados_brutos.decode('utf-8'))
-            acao = mensagem.get("acao")
-            payload = mensagem.get("dados", {})
-            
-            resposta = {}
-            if acao == "LOGIN":
-                resposta = autenticar_utilizador(payload.get("email"), payload.get("password"))
-            elif acao in ["ADICIONAR_FUNCIONARIO", "ATUALIZAR_FUNCIONARIO", "REMOVER_FUNCIONARIO"]:
-                resposta = gerir_funcionarios(acao, payload)
-            else:
-                resposta = {"status": "erro", "mensagem": f"Ação '{acao}' não reconhecida pela Pessoa 1."}
-                
-            cliente_socket.sendall(json.dumps(resposta).encode('utf-8'))
-    except Exception as e:
-        print(f"Erro com o cliente {endereco}: {e}")
+        with sock, sock.makefile("r", encoding="utf-8", newline="\n") as leitura:
+            for linha in leitura:  # um pedido JSON por linha
+                linha = linha.strip()
+                if not linha:
+                    continue
+                try:
+                    resposta = processar(json.loads(linha), sessao)
+                except json.JSONDecodeError:
+                    resposta = {"status": "erro", "mensagem": "Pedido inválido."}
+                except ErroNegocio as e:
+                    resposta = {"status": "erro", "mensagem": str(e)}
+                except Exception as e:
+                    print(f"[!] Erro interno com {endereco}: {e!r}")
+                    resposta = {"status": "erro", "mensagem": "Erro interno do servidor."}
+                enviar(sock, resposta)
+    except OSError as e:
+        print(f"[!] Ligação com {endereco} perdida: {e}")
     finally:
-        cliente_socket.close()
-        print(f"Conexão fechada com {endereco}")
+        print(f"[-] Conexão fechada com {endereco}")
+
 
 def iniciar_servidor():
-    verificar_primeiro_gestor()
-    
+    criar_tabelas()
+    criar_primeiro_gestor()
+
     servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     servidor.bind((HOST, PORT))
     servidor.listen(5)
-    print(f"Servidor de Sockets a ouvir da porta {PORT}")
-    
+    print(f"Servidor a ouvir na porta {PORT}")
+
     try:
         while True:
-            cliente_socket, endereco = servidor.accept()
-            thread = threading.Thread(target=tratar_cliente, args=(cliente_socket, endereco))
-            thread.daemon = True
-            thread.start()
+            sock, endereco = servidor.accept()
+            threading.Thread(
+                target=tratar_cliente, args=(sock, endereco), daemon=True
+            ).start()
     except KeyboardInterrupt:
-        print("\nEncerrand o servidor...")
+        print("\nA encerrar o servidor...")
     finally:
         servidor.close()
+
 
 if __name__ == "__main__":
     iniciar_servidor()

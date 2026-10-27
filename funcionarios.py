@@ -1,7 +1,13 @@
 """Gestão de funcionários (mecânicos e gestores). Só o gestor pode usar estas ações."""
-from auth import ErroNegocio, criar_utilizador, exigir_role, hash_password
+from auth import (
+    ErroNegocio,
+    como_int,
+    criar_utilizador,
+    exigir_role,
+    hash_password,
+)
 from db import consultar, executar
-from modelos import Cliente, Gestor, Mecanico
+from modelos import Gestor, Mecanico
 
 ROLES_FUNCIONARIO = (Mecanico.ROLE, Gestor.ROLE)
 
@@ -14,6 +20,7 @@ def _total_gestores():
 
 
 def _obter_funcionario(id_):
+    id_ = como_int(id_, "id")
     linha = consultar("SELECT * FROM utilizadores WHERE id=%s", (id_,), um=True)
     if not linha or linha["role"] not in ROLES_FUNCIONARIO:
         raise ErroNegocio("Funcionário não encontrado.")

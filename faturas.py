@@ -1,88 +1,128 @@
-from connect import start_connection
+"""Faturação e relatórios."""
+from auth import (
+    ErroNegocio,
+    PermissaoNegada,
+    como_decimal,
+    como_int,
+    exigir_login,
+    exigir_role,
+)
+from db import consultar, executar
+from modelos import Cliente, Gestor
+
+METODOS_PAGAMENTO = ("Dinheiro", "Cartão", "MB Way", "Transferência")
+
+
+def calcular_custo_pecas(reparacao_id):
+    linha = consultar(
+        "SELECT COALESCE(SUM(rp.quantidade * p.preco), 0) AS total "
+        "FROM reparacao_pecas rp JOIN pecas p ON p.id = rp.peca_id "
+        "WHERE rp.reparacao_id=%s",
+        (reparacao_id,),
+        um=True,
+    )
+    return linha["total"]
+
 
 def calcular_total(custo_pecas, custo_servico):
     return custo_pecas + custo_servico
 
 
-def gerar_fatura(id_reparacao, custo_pecas, custo_servico):
+def gerar_fatura(dados, sessao):
+    exigir_role(sessao, Gestor.ROLE)
+    reparacao_id = como_int(dados.get("reparacao_id"), "reparacao_id")
+    custo_servico = como_decimal(dados.get("custo_servico"), "custo_servico")
 
-    total = calcular_total(
-        custo_pecas,
-        custo_servico
+    rep = consultar(
+        "SELECT id, estado FROM reparacoes WHERE id=%s", (reparacao_id,), um=True
     )
+    if not rep:
+        raise ErroNegocio("Reparação não encontrada.")
+    if rep["estado"] != "Concluída":
+        raise ErroNegocio("Só se podem faturar reparações concluídas.")
+    if consultar("SELECT id FROM faturas WHERE reparacao_id=%s", (reparacao_id,), um=True):
+        raise ErroNegocio("Esta reparação já tem fatura.")
 
-    conn = start_connection()
-    cursor = conn.cursor()
-
-    sql = """
-    INSERT INTO faturas
-    (id_reparacao,custo_pecas,custo_servico,total)
-    VALUES (%s,%s,%s,%s)
-    """
-
-    cursor.execute(
-        sql,
-        (id_reparacao, custo_pecas, custo_servico, total)
+    custo_pecas = calcular_custo_pecas(reparacao_id)
+    total = calcular_total(custo_pecas, custo_servico)
+    fatura_id = executar(
+        "INSERT INTO faturas (reparacao_id, custo_pecas, custo_servico, valor_total, data_emissao) "
+        "VALUES (%s, %s, %s, %s, CURDATE())",
+        (reparacao_id, custo_pecas, custo_servico, total),
     )
+    return {
+        "mensagem": "Fatura criada.",
+        "id": fatura_id,
+        "custo_pecas": custo_pecas,
+        "custo_servico": custo_servico,
+        "valor_total": total,
+    }
 
-    conn.commit()
 
-    print("Fatura criada!")
-    print("Total:", total, "€")
+def registar_pagamento(dados, sessao):
+    exigir_role(sessao, Gestor.ROLE)
+    fatura_id = como_int(dados.get("fatura_id"), "fatura_id")
+    metodo = (dados.get("metodo") or "").strip()
+    if metodo not in METODOS_PAGAMENTO:
+        raise ErroNegocio("Método inválido. Usa: " + ", ".join(METODOS_PAGAMENTO) + ".")
 
-    cursor.close()
-    conn.close()
+    fatura = consultar("SELECT id, pago FROM faturas WHERE id=%s", (fatura_id,), um=True)
+    if not fatura:
+        raise ErroNegocio("Fatura não encontrada.")
+    if fatura["pago"]:
+        raise ErroNegocio("Esta fatura já foi paga.")
 
-
-def registar_pagamento(id_fatura, metodo):
-
-    conn = start_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        UPDATE faturas
-        SET metodo_pagamento=%s
-        WHERE id=%s
-        """,
-        (metodo, id_fatura)
+    executar(
+        "UPDATE faturas SET pago=TRUE, metodo_pagamento=%s WHERE id=%s",
+        (metodo, fatura_id),
     )
-
-    conn.commit()
-
-    print("Pagamento registado!")
-
-    cursor.close()
-    conn.close()
+    return {"mensagem": "Pagamento registado."}
 
 
-def historico_faturas():
+def listar_faturas(dados, sessao):
+    """Gestor vê todas; cliente vê só as suas."""
+    user = exigir_login(sessao)
+    if user.ROLE == Gestor.ROLE:
+        faturas = consultar("SELECT * FROM faturas ORDER BY id DESC")
+    elif user.ROLE == Cliente.ROLE:
+        faturas = consultar(
+            "SELECT f.* FROM faturas f JOIN reparacoes r ON r.id = f.reparacao_id "
+            "WHERE r.cliente_id=%s ORDER BY f.id DESC",
+            (user.id,),
+        )
+    else:
+        raise PermissaoNegada("Não tens permissão para esta operação.")
+    return {"faturas": faturas}
 
-    conn = start_connection()
-    cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM faturas")
+def ver_fatura(dados, sessao):
+    """Fatura de uma reparação (o cliente só vê as suas)."""
+    user = exigir_login(sessao)
+    reparacao_id = como_int(dados.get("reparacao_id"), "reparacao_id")
+    rep = consultar(
+        "SELECT cliente_id FROM reparacoes WHERE id=%s", (reparacao_id,), um=True
+    )
+    if not rep:
+        raise ErroNegocio("Reparação não encontrada.")
+    if user.ROLE == Cliente.ROLE and rep["cliente_id"] != user.id:
+        raise PermissaoNegada("Não tens permissão para ver esta fatura.")
+    fatura = consultar(
+        "SELECT * FROM faturas WHERE reparacao_id=%s", (reparacao_id,), um=True
+    )
+    if not fatura:
+        raise ErroNegocio("Esta reparação ainda não tem fatura.")
+    return {"fatura": fatura}
 
-    resultados = cursor.fetchall()
 
-    for linha in resultados:
-        print(linha)
-
-    cursor.close()
-    conn.close()
+def historico_reparacoes(dados, sessao):
+    exigir_role(sessao, Gestor.ROLE)
+    return {"reparacoes": consultar("SELECT * FROM reparacoes ORDER BY id DESC")}
 
 
-def historico_reparacoes():
-
-    conn = start_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM reparacoes")
-
-    resultados = cursor.fetchall()
-
-    for linha in resultados:
-        print(linha)
-
-    cursor.close()
-    conn.close()
+ACOES = {
+    "GERAR_FATURA": gerar_fatura,
+    "REGISTAR_PAGAMENTO": registar_pagamento,
+    "LISTAR_FATURAS": listar_faturas,
+    "VER_FATURA": ver_fatura,
+    "HISTORICO_REPARACOES": historico_reparacoes,
+}

@@ -1,5 +1,8 @@
+import sys
 from contextlib import contextmanager
+
 from pymysql.cursors import DictCursor
+
 from connect import start_connection
 
 TABELAS = [
@@ -54,13 +57,24 @@ TABELAS = [
     """
     CREATE TABLE IF NOT EXISTS faturas (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        reparacao_id INT NOT NULL,
+        reparacao_id INT NOT NULL UNIQUE,
+        custo_pecas DECIMAL(10,2) NOT NULL,
+        custo_servico DECIMAL(10,2) NOT NULL,
         valor_total DECIMAL(10,2) NOT NULL,
         pago BOOLEAN NOT NULL DEFAULT FALSE,
         metodo_pagamento VARCHAR(30) NULL,
         data_emissao DATE NOT NULL
     )
     """,
+]
+
+NOMES_TABELAS = [
+    "faturas",
+    "reparacao_pecas",
+    "pecas",
+    "reparacoes",
+    "veiculos",
+    "utilizadores",
 ]
 
 
@@ -70,6 +84,18 @@ def criar_tabelas():
         with conn.cursor() as cur:
             for sql in TABELAS:
                 cur.execute(sql)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def apagar_tabelas():
+    """CUIDADO: apaga todos os dados. Usar só para recomeçar com o esquema novo."""
+    conn = start_connection()
+    try:
+        with conn.cursor() as cur:
+            for nome in NOMES_TABELAS:
+                cur.execute(f"DROP TABLE IF EXISTS {nome}")
         conn.commit()
     finally:
         conn.close()
@@ -108,3 +134,11 @@ def transacao():
         raise
     finally:
         conn.close()
+
+
+if __name__ == "__main__":
+    if "--reset" in sys.argv:
+        apagar_tabelas()
+        print("[!] Tabelas antigas apagadas.")
+    criar_tabelas()
+    print("[+] Tabelas criadas.")
