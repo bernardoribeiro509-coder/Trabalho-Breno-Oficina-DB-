@@ -1,5 +1,4 @@
-from ligacao import ligar_bd
-
+from connect import start_connection
 
 def calcular_total(custo_pecas, custo_servico):
     return custo_pecas + custo_servico
@@ -12,7 +11,7 @@ def gerar_fatura(id_reparacao, custo_pecas, custo_servico):
         custo_servico
     )
 
-    conn = ligar_bd()
+    conn = start_connection()
     cursor = conn.cursor()
 
     sql = """
@@ -37,7 +36,7 @@ def gerar_fatura(id_reparacao, custo_pecas, custo_servico):
 
 def registar_pagamento(id_fatura, metodo):
 
-    conn = ligar_bd()
+    conn = start_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -59,7 +58,7 @@ def registar_pagamento(id_fatura, metodo):
 
 def historico_faturas():
 
-    conn = ligar_bd()
+    conn = start_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM faturas")
@@ -75,7 +74,7 @@ def historico_faturas():
 
 def historico_reparacoes():
 
-    conn = ligar_bd()
+    conn = start_connection()
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM reparacoes")
