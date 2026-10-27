@@ -1,7 +1,7 @@
 import socket
 import json
  
-HOST = '127.0.0.1'  # Muda para o IP do PC onde corre o servidor
+HOST = '192.168.2.118'  # Muda para o IP do PC onde corre o servidor
 PORT = 5000
  
  
