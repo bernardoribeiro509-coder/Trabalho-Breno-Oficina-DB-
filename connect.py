@@ -6,11 +6,11 @@ load_dotenv()
 
 def start_connection():
     return pymysql.connect(
-        host=os.environ["DB_HOST"],
-        user=os.environ["DB_USER"],
-        password=os.environ["DB_PASSWORD"],
-        database=os.environ["DB_NAME"],
-        port=int(os.environ["DB_PORT"]),
+        host="gateway01.eu-central-1.prod.aws.tidbcloud.com",
+        user="cmE1xkqsg64fwEZ.root",
+        password="LIZMR4e3RDu9tuDr",
+        database="oficina",
+        port=4000,
         ssl={"ssl": True},
     )
 
