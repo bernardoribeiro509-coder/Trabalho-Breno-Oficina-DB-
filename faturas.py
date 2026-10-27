@@ -1,7 +1,8 @@
 from connect import start_connection
 
 def calcular_custo(reparacao_id):
-    c = start_connection(); cur = c.cursor()
+    c = start_connection(); 
+    cur = c.cursor()
     cur.execute("""SELECT ts.preco_mao_de_obra + COALESCE(SUM(rp.quantidade * rp.preco_unitario), 0)
                    FROM reparacoes r
                    JOIN tipos_servico ts ON ts.id = r.tipo_servico_id
