@@ -1,41 +1,50 @@
 from connect import start_connection
 
 def registar_peca(nome, codigo, preco, quantidade):
-    c = start_connection(); cur = c.cursor()
-    cur.execute("INSERT INTO pecas (nome, codigo, preco, quantidade) VALUES (%s,%s,%s,%s)", (nome, codigo, preco, quantidade))
-    c.commit(); c.close()
+    conexao = start_connection()
+    cursor = conexao.cursor()
+    cursor.execute("INSERT INTO pecas (nome, codigo, preco, quantidade) VALUES (%s, %s, %s, %s)", (nome, codigo, preco, quantidade))
+    conexao.commit()
+    conexao.close()
     return {"status": "sucesso"}
 
 def listar_pecas():
-    c = start_connection(); cur = c.cursor()
-    cur.execute("SELECT id, nome, codigo, preco, quantidade FROM pecas")
-    r = [(i, n, cod, float(p), q) for i, n, cod, p, q in cur.fetchall()]
-    c.close()
-    return r
+    conexao = start_connection()
+    cursor = conexao.cursor()
+    cursor.execute("SELECT id, nome, codigo, preco, quantidade FROM pecas")
+    pecas = cursor.fetchall()
+    conexao.close()
+    return [(peca_id, nome, codigo, float(preco), quantidade) for peca_id, nome, codigo, preco, quantidade in pecas]
 
 def atualizar_peca(peca_id, preco, quantidade):
-    c = start_connection(); cur = c.cursor()
-    cur.execute("UPDATE pecas SET preco=%s, quantidade=%s WHERE id=%s", (preco, quantidade, peca_id))
-    c.commit(); c.close()
+    conexao = start_connection()
+    cursor = conexao.cursor()
+    cursor.execute("UPDATE pecas SET preco=%s, quantidade=%s WHERE id=%s", (preco, quantidade, peca_id))
+    conexao.commit()
+    conexao.close()
     return {"status": "sucesso"}
 
-def tem_stock(peca_id, quantidade):
-    c = start_connection(); cur = c.cursor()
-    cur.execute("SELECT quantidade FROM pecas WHERE id=%s", (peca_id,))
-    q = cur.fetchone()[0]
-    c.close()
-    return q >= quantidade
+def tem_stock(peca_id, quantidade_pedida):
+    conexao = start_connection()
+    cursor = conexao.cursor()
+    cursor.execute("SELECT quantidade FROM pecas WHERE id=%s", (peca_id,))
+    quantidade_atual = cursor.fetchone()[0]
+    conexao.close()
+    return quantidade_atual >= quantidade_pedida
 
-def usar_peca(reparacao_id, peca_id, quantidade):
-    c = start_connection(); cur = c.cursor()
-    cur.execute("SELECT preco, quantidade, nome FROM pecas WHERE id=%s", (peca_id,))
-    preco, stock, nome = cur.fetchone()
-    if stock < quantidade:
-        c.close()
+def usar_peca(reparacao_id, peca_id, quantidade_usada):
+    conexao = start_connection()
+    cursor = conexao.cursor()
+    cursor.execute("SELECT nome, quantidade FROM pecas WHERE id=%s", (peca_id,))
+    nome_peca, stock_atual = cursor.fetchone()
+    if stock_atual < quantidade_usada:
+        conexao.close()
         return {"status": "erro", "mensagem": "Stock insuficiente."}
-    cur.execute("INSERT INTO reparacao_pecas (reparacao_id, peca_id, quantidade, preco_unitario) VALUES (%s,%s,%s,%s)", (reparacao_id, peca_id, quantidade, preco))
-    cur.execute("UPDATE pecas SET quantidade=%s WHERE id=%s", (stock - quantidade, peca_id))
-    c.commit(); c.close()
-    if stock - quantidade < 5:
-        return {"status": "sucesso", "alerta": "ALERTA_STOCK_BAIXO", "peca": nome}
+    novo_stock = stock_atual - quantidade_usada
+    cursor.execute("INSERT INTO reparacao_pecas (reparacao_id, peca_id, quantidade_utilizada) VALUES (%s, %s, %s)", (reparacao_id, peca_id, quantidade_usada))
+    cursor.execute("UPDATE pecas SET quantidade=%s WHERE id=%s", (novo_stock, peca_id))
+    conexao.commit()
+    conexao.close()
+    if novo_stock < 5:
+        return {"status": "sucesso", "alerta": "ALERTA_STOCK_BAIXO", "peca": nome_peca}
     return {"status": "sucesso"}
