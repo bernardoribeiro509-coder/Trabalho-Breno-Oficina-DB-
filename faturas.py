@@ -1,40 +1,89 @@
-from connect import start_connection
+from ligacao import ligar_bd
 
-def calcular_custo(reparacao_id):
-    c = start_connection(); 
-    cur = c.cursor()
-    cur.execute("""SELECT ts.preco_mao_de_obra + COALESCE(SUM(rp.quantidade * rp.preco_unitario), 0)
-                   FROM reparacoes r
-                   JOIN tipos_servico ts ON ts.id = r.tipo_servico_id
-                   LEFT JOIN reparacao_pecas rp ON rp.reparacao_id = r.id
-                   WHERE r.id=%s GROUP BY ts.preco_mao_de_obra""", (reparacao_id,))
-    total = float(cur.fetchone()[0])
-    c.close()
-    return total
 
-def gerar_fatura(reparacao_id):
-    total = calcular_custo(reparacao_id)
-    c = start_connection(); cur = c.cursor()
-    cur.execute("INSERT INTO faturas (reparacao_id, total) VALUES (%s,%s)", (reparacao_id, total))
-    c.commit(); c.close()
-    return {"status": "sucesso", "total": total}
+def calcular_total(custo_pecas, custo_servico):
+    return custo_pecas + custo_servico
 
-def registar_pagamento(reparacao_id, valor, metodo):
-    c = start_connection(); cur = c.cursor()
-    cur.execute("INSERT INTO pagamentos (reparacao_id, valor, metodo) VALUES (%s,%s,%s)", (reparacao_id, valor, metodo))
-    c.commit(); c.close()
-    return {"status": "sucesso"}
 
-def historico_reparacoes():
-    c = start_connection(); cur = c.cursor()
-    cur.execute("SELECT id, data_agendada, estado, veiculo_id FROM reparacoes")
-    r = cur.fetchall()
-    c.close()
-    return r
+def gerar_fatura(id_reparacao, custo_pecas, custo_servico):
+
+    total = calcular_total(
+        custo_pecas,
+        custo_servico
+    )
+
+    conn = ligar_bd()
+    cursor = conn.cursor()
+
+    sql = """
+    INSERT INTO faturas
+    (id_reparacao,custo_pecas,custo_servico,total)
+    VALUES (%s,%s,%s,%s)
+    """
+
+    cursor.execute(
+        sql,
+        (id_reparacao, custo_pecas, custo_servico, total)
+    )
+
+    conn.commit()
+
+    print("Fatura criada!")
+    print("Total:", total, "€")
+
+    cursor.close()
+    conn.close()
+
+
+def registar_pagamento(id_fatura, metodo):
+
+    conn = ligar_bd()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE faturas
+        SET metodo_pagamento=%s
+        WHERE id=%s
+        """,
+        (metodo, id_fatura)
+    )
+
+    conn.commit()
+
+    print("Pagamento registado!")
+
+    cursor.close()
+    conn.close()
+
 
 def historico_faturas():
-    c = start_connection(); cur = c.cursor()
-    cur.execute("SELECT id, reparacao_id, total FROM faturas")
-    r = [(i, rep, float(t)) for i, rep, t in cur.fetchall()]
-    c.close()
-    return r
+
+    conn = ligar_bd()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM faturas")
+
+    resultados = cursor.fetchall()
+
+    for linha in resultados:
+        print(linha)
+
+    cursor.close()
+    conn.close()
+
+
+def historico_reparacoes():
+
+    conn = ligar_bd()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM reparacoes")
+
+    resultados = cursor.fetchall()
+
+    for linha in resultados:
+        print(linha)
+
+    cursor.close()
+    conn.close()
