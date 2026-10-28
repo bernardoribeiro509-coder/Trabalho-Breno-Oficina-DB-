@@ -4,8 +4,6 @@ ROLE_GESTOR = "ROLE_GESTOR"
 
 
 class Utilizador:
-    """Classe base. Cada tipo de utilizador herda desta e define o seu ROLE."""
-
     ROLE = None
     DESCRICAO = "Utilizador"
 
@@ -27,7 +25,6 @@ class Utilizador:
 
     @staticmethod
     def de_linha(linha):
-        """Cria o objeto da subclasse certa a partir de uma linha da tabela utilizadores."""
         classe = _CLASSES.get(linha["role"])
         if classe is None:
             raise ValueError(f"Role desconhecido: {linha['role']}")

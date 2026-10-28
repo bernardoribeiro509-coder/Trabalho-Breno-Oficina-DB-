@@ -1,6 +1,5 @@
 import pymysql
 
-
 def start_connection():
     return pymysql.connect(
         host="gateway01.eu-central-1.prod.aws.tidbcloud.com",

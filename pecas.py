@@ -1,4 +1,4 @@
-"""Gestão de stock e peças."""
+
 from auth import (
     ErroNegocio,
     PermissaoNegada,
@@ -13,7 +13,6 @@ STOCK_MINIMO = 5
 
 
 def tem_stock(peca_id, quantidade_pedida):
-    """Helper para o módulo de reparações: verifica stock antes de aceitar uma reparação."""
     linha = consultar("SELECT quantidade FROM pecas WHERE id=%s", (peca_id,), um=True)
     return bool(linha) and linha["quantidade"] >= quantidade_pedida
 
@@ -47,7 +46,6 @@ def listar_pecas(dados, sessao):
 
 
 def atualizar_peca(dados, sessao):
-    """Campos opcionais: preco, quantidade."""
     exigir_role(sessao, Gestor.ROLE)
     peca_id = como_int(dados.get("id"), "id")
     if not consultar("SELECT id FROM pecas WHERE id=%s", (peca_id,), um=True):
@@ -79,7 +77,6 @@ def verificar_stock(dados, sessao):
 
 
 def usar_peca(dados, sessao):
-    """Regista a utilização de uma peça numa reparação e abate o stock."""
     user = exigir_role(sessao, Mecanico.ROLE, Gestor.ROLE)
     reparacao_id = como_int(dados.get("reparacao_id"), "reparacao_id")
     peca_id = como_int(dados.get("peca_id"), "peca_id")

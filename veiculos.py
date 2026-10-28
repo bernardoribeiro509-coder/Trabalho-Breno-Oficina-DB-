@@ -1,4 +1,4 @@
-"""Gestão de veículos e reparações."""
+
 from datetime import date, datetime
 
 from auth import ErroNegocio, PermissaoNegada, como_int, exigir_login, exigir_role
@@ -54,7 +54,6 @@ def registar_veiculo(dados, sessao):
 
 
 def atualizar_veiculo(dados, sessao):
-    """Atualiza a quilometragem (nunca pode diminuir)."""
     user = exigir_login(sessao)
     v = _obter(user, dados.get("veiculo_id"))
     km = como_int(dados.get("quilometragem"), "quilometragem")
@@ -97,9 +96,6 @@ def remover_veiculo(dados, sessao):
         raise ErroNegocio("Este veículo tem reparações associadas e não pode ser removido.")
     executar("DELETE FROM veiculos WHERE id=%s", (v["id"],))
     return {"mensagem": "Veículo removido."}
-
-
-# ---------- reparações ----------
 
 SELECT_REPARACOES = (
     "SELECT r.id, r.data, r.tipo_servico, r.estado, r.observacoes, "
