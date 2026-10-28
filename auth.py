@@ -18,7 +18,7 @@ class PermissaoNegada(ErroNegocio):
     pass
 
 
-# ---------- helpers de validação (usados pelos outros módulos) ----------
+
 
 def como_int(valor, campo):
     try:
@@ -37,8 +37,6 @@ def como_decimal(valor, campo):
     return numero.quantize(Decimal("0.01"))
 
 
-# ---------- passwords ----------
-
 def hash_password(password):
     salt = os.urandom(16)
     h = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, ITERACOES)
@@ -55,8 +53,6 @@ def verificar_password(password, guardado):
     return hmac.compare_digest(h.hex(), hash_hex)
 
 
-# ---------- sessão e permissões ----------
-
 def exigir_login(sessao):
     if sessao.get("utilizador") is None:
         raise PermissaoNegada("Tens de fazer login primeiro.")
@@ -69,8 +65,6 @@ def exigir_role(sessao, *roles):
         raise PermissaoNegada("Não tens permissão para esta operação.")
     return user
 
-
-# ---------- utilizadores ----------
 
 def criar_utilizador(username, password, nome, role):
     username = (username or "").strip()
@@ -90,7 +84,7 @@ def criar_utilizador(username, password, nome, role):
 
 
 def criar_primeiro_gestor():
-    """Chamado ao arrancar o servidor: se não houver gestores, cria o primeiro."""
+    
     existe = consultar(
         "SELECT id FROM utilizadores WHERE role=%s LIMIT 1", (Gestor.ROLE,), um=True
     )

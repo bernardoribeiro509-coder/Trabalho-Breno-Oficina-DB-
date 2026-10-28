@@ -7,7 +7,6 @@ PORT = 5000
 
 
 class Ligacao:
-    """Ligação ao servidor: um pedido JSON por linha, uma resposta JSON por linha."""
 
     def __init__(self, host, port):
         self.sock = socket.create_connection((host, port), timeout=10)
@@ -29,7 +28,6 @@ class Ligacao:
             self.sock.close()
 
 
-# ---------- helpers de apresentação ----------
 
 def pedir(texto):
     return input(f"{texto}: ").strip()
@@ -58,7 +56,7 @@ def listar(resposta, chave):
 
 
 def correr_menu(titulo, opcoes):
-    """opcoes: {"1": ("Texto", funcao)}; cada funcao recebe a ligação."""
+    
     while True:
         print(f"\n--- {titulo} ---")
         for chave, (texto, _) in opcoes.items():
@@ -97,7 +95,6 @@ def registar_cliente(lig):
 # ---------- gestor ----------
 
 def pedir_role(texto="Tipo de funcionário", opcional=False):
-    """Mostra 1 = Mecânico, 2 = Gestor e devolve o role correspondente."""
     roles = {"1": "ROLE_MECANICO", "2": "ROLE_GESTOR"}
     while True:
         extra = " (vazio = manter)" if opcional else ""
@@ -310,7 +307,6 @@ def menu_cliente(lig):
     })
 
 
-# ---------- mecânico ----------
 
 def menu_mecanico(lig):
     def usar_peca():
@@ -328,8 +324,6 @@ def menu_mecanico(lig):
         "5": ("Adicionar observações", lambda: observacoes(lig)),
     })
 
-
-# ---------- main ----------
 
 def main():
     HOST = input(f"IP do servidor: ").strip() or HOST_POR_DEFEITO
