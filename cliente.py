@@ -71,8 +71,6 @@ def correr_menu(titulo, opcoes):
             print("Opção inválida.")
 
 
-# ---------- autenticação ----------
-
 def fazer_login(lig):
     username = pedir("Username")
     password = getpass.getpass("Password: ")
@@ -91,8 +89,6 @@ def registar_cliente(lig):
         "password": getpass.getpass("Password (mín. 6): "),
     }))
 
-
-# ---------- gestor ----------
 
 def pedir_role(texto="Tipo de funcionário", opcional=False):
     roles = {"1": "ROLE_MECANICO", "2": "ROLE_GESTOR"}
@@ -266,8 +262,6 @@ def menu_gestor(lig):
         "5": ("Reparações", lambda: menu_reparacoes_gestor(lig)),
     })
 
-
-# ---------- cliente ----------
 
 def menu_cliente(lig):
     def registar():
