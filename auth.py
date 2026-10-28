@@ -11,7 +11,7 @@ ITERACOES = 200_000
 
 
 class ErroNegocio(Exception):
-    """Erro que é mostrado ao cliente (dados inválidos, não encontrado, etc.)."""
+    """Erro que é mostrado ao cliente dados inválidos"""
 
 
 class PermissaoNegada(ErroNegocio):
