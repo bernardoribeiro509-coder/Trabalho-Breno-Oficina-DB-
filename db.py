@@ -1,8 +1,6 @@
 import sys
 from contextlib import contextmanager
-
 from pymysql.cursors import DictCursor
-
 from connect import start_connection
 
 TABELAS = [

@@ -10,7 +10,6 @@ def start_connection():
         ssl={"ssl": True},
     )
 
-
 if __name__ == "__main__":
     try:
         conexao = start_connection()

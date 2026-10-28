@@ -9,23 +9,17 @@ from modelos import ROLES, Cliente, Gestor, Utilizador
 
 ITERACOES = 200_000
 
-
 class ErroNegocio(Exception):
     """Erro que é mostrado ao cliente dados inválidos"""
 
-
 class PermissaoNegada(ErroNegocio):
     pass
-
-
-
 
 def como_int(valor, campo):
     try:
         return int(valor)
     except (TypeError, ValueError):
         raise ErroNegocio(f"'{campo}' tem de ser um número inteiro.")
-
 
 def como_decimal(valor, campo):
     try:
@@ -36,12 +30,10 @@ def como_decimal(valor, campo):
         raise ErroNegocio(f"'{campo}' não pode ser negativo.")
     return numero.quantize(Decimal("0.01"))
 
-
 def hash_password(password):
     salt = os.urandom(16)
     h = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, ITERACOES)
     return f"{salt.hex()}${h.hex()}"
-
 
 def verificar_password(password, guardado):
     try:
@@ -52,19 +44,16 @@ def verificar_password(password, guardado):
     h = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, ITERACOES)
     return hmac.compare_digest(h.hex(), hash_hex)
 
-
 def exigir_login(sessao):
     if sessao.get("utilizador") is None:
         raise PermissaoNegada("Tens de fazer login primeiro.")
     return sessao["utilizador"]
-
 
 def exigir_role(sessao, *roles):
     user = exigir_login(sessao)
     if user.ROLE not in roles:
         raise PermissaoNegada("Não tens permissão para esta operação.")
     return user
-
 
 def criar_utilizador(username, password, nome, role):
     username = (username or "").strip()
@@ -81,7 +70,6 @@ def criar_utilizador(username, password, nome, role):
         "INSERT INTO utilizadores (username, password_hash, nome, role) VALUES (%s,%s,%s,%s)",
         (username, hash_password(password), nome, role),
     )
-
 
 def criar_primeiro_gestor():
     
@@ -102,9 +90,6 @@ def criar_primeiro_gestor():
         except ErroNegocio as e:
             print(f"[-] {e}")
 
-
-# ---------- ações (chamadas pelo servidor) ----------
-
 def login(dados, sessao):
     username = (dados.get("username") or "").strip()
     password = dados.get("password") or ""
@@ -115,18 +100,15 @@ def login(dados, sessao):
     sessao["utilizador"] = user
     return {"role": user.ROLE, "utilizador": user.para_dict(), "nome": user.nome}
 
-
 def logout(dados, sessao):
     sessao["utilizador"] = None
     return {"mensagem": "Sessão terminada."}
-
 
 def registar_cliente(dados, sessao):
     criar_utilizador(
         dados.get("username"), dados.get("password"), dados.get("nome"), Cliente.ROLE
     )
     return {"mensagem": "Cliente registado."}
-
 
 ACOES = {
     "LOGIN": login,

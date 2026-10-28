@@ -5,7 +5,6 @@ import socket
 HOST_POR_DEFEITO = "192.168.2.118"  
 PORT = 5000
 
-
 class Ligacao:
 
     def __init__(self, host, port):
@@ -28,10 +27,8 @@ class Ligacao:
             self.sock.close()
 
 
-
 def pedir(texto):
     return input(f"{texto}: ").strip()
-
 
 def mostrar(resposta):
     if resposta.get("status") == "sucesso":
@@ -43,7 +40,6 @@ def mostrar(resposta):
     else:
         print(f"Erro: {resposta.get('mensagem')}")
 
-
 def listar(resposta, chave):
     if resposta.get("status") != "sucesso":
         mostrar(resposta)
@@ -53,7 +49,6 @@ def listar(resposta, chave):
         print("(sem resultados)")
     for item in itens:
         print(" | ".join(f"{k}={v}" for k, v in item.items()))
-
 
 def correr_menu(titulo, opcoes):
     
@@ -70,7 +65,6 @@ def correr_menu(titulo, opcoes):
         else:
             print("Opção inválida.")
 
-
 def fazer_login(lig):
     username = pedir("Username")
     password = getpass.getpass("Password: ")
@@ -81,14 +75,12 @@ def fazer_login(lig):
     mostrar(resposta)
     return None
 
-
 def registar_cliente(lig):
     mostrar(lig.enviar("REGISTAR_CLIENTE", {
         "nome": pedir("Nome"),
         "username": pedir("Username"),
         "password": getpass.getpass("Password (mín. 6): "),
     }))
-
 
 def pedir_role(texto="Tipo de funcionário", opcional=False):
     roles = {"1": "ROLE_MECANICO", "2": "ROLE_GESTOR"}
@@ -100,7 +92,6 @@ def pedir_role(texto="Tipo de funcionário", opcional=False):
         if escolha in roles:
             return roles[escolha]
         print("Opção inválida. Escolhe 1 ou 2.")
-
 
 
 def menu_funcionarios(lig):
@@ -135,7 +126,6 @@ def menu_funcionarios(lig):
         "4": ("Remover", remover),
     })
 
-
 def menu_pecas(lig):
     def registar():
         mostrar(lig.enviar("REGISTAR_PECA", {
@@ -157,7 +147,6 @@ def menu_pecas(lig):
         "2": ("Registar peça", registar),
         "3": ("Atualizar preço/quantidade", atualizar),
     })
-
 
 def menu_veiculos_gestor(lig):
     def registar():
@@ -182,7 +171,6 @@ def menu_veiculos_gestor(lig):
         "4": ("Remover", remover),
     })
 
-
 def menu_faturas(lig):
     def gerar():
         mostrar(lig.enviar("GERAR_FATURA", {
@@ -204,7 +192,6 @@ def menu_faturas(lig):
               lambda: listar(lig.enviar("HISTORICO_REPARACOES"), "reparacoes")),
     })
 
-
 def pedir_estado():
     estados = {"1": "Agendada", "2": "Em curso", "3": "Concluída"}
     while True:
@@ -213,20 +200,17 @@ def pedir_estado():
             return estados[escolha]
         print("Opção inválida. Escolhe 1, 2 ou 3.")
 
-
 def mudar_estado(lig):
     mostrar(lig.enviar("ATUALIZAR_ESTADO_REPARACAO", {
         "reparacao_id": pedir("ID da reparação"),
         "estado": pedir_estado(),
     }))
 
-
 def observacoes(lig):
     mostrar(lig.enviar("ADICIONAR_OBSERVACOES", {
         "reparacao_id": pedir("ID da reparação"),
         "observacoes": pedir("Observações"),
     }))
-
 
 def menu_reparacoes_gestor(lig):
     def criar():
@@ -252,7 +236,6 @@ def menu_reparacoes_gestor(lig):
         "6": ("Adicionar observações", lambda: observacoes(lig)),
     })
 
-
 def menu_gestor(lig):
     correr_menu("Menu Gestor", {
         "1": ("Funcionários", lambda: menu_funcionarios(lig)),
@@ -261,7 +244,6 @@ def menu_gestor(lig):
         "4": ("Faturação", lambda: menu_faturas(lig)),
         "5": ("Reparações", lambda: menu_reparacoes_gestor(lig)),
     })
-
 
 def menu_cliente(lig):
     def registar():
@@ -301,7 +283,6 @@ def menu_cliente(lig):
     })
 
 
-
 def menu_mecanico(lig):
     def usar_peca():
         mostrar(lig.enviar("USAR_PECA", {
@@ -317,7 +298,6 @@ def menu_mecanico(lig):
         "4": ("Mudar estado de uma reparação", lambda: mudar_estado(lig)),
         "5": ("Adicionar observações", lambda: observacoes(lig)),
     })
-
 
 def main():
     HOST = input(f"IP do servidor: ").strip() or HOST_POR_DEFEITO
@@ -357,7 +337,6 @@ def main():
     finally:
         lig.fechar()
         print("Ligação terminada.")
-
 
 if __name__ == "__main__":
     main()

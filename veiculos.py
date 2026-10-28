@@ -1,12 +1,10 @@
 
 from datetime import date, datetime
-
 from auth import ErroNegocio, PermissaoNegada, como_int, exigir_login, exigir_role
 from db import consultar, executar
 from modelos import Cliente, Gestor, Mecanico
 
 ESTADOS = ("Agendada", "Em curso", "Concluída")
-
 
 def _obter(user, veiculo_id):
     veiculo_id = como_int(veiculo_id, "veiculo_id")
@@ -16,7 +14,6 @@ def _obter(user, veiculo_id):
     if user.ROLE == Cliente.ROLE and v["cliente_id"] != user.id:
         raise PermissaoNegada("Não tens permissão para aceder a este veículo.")
     return v
-
 
 def registar_veiculo(dados, sessao):
     user = exigir_role(sessao, Cliente.ROLE, Gestor.ROLE)
@@ -52,7 +49,6 @@ def registar_veiculo(dados, sessao):
     )
     return {"mensagem": "Veículo registado.", "veiculo": _obter(user, novo_id)}
 
-
 def atualizar_veiculo(dados, sessao):
     user = exigir_login(sessao)
     v = _obter(user, dados.get("veiculo_id"))
@@ -61,7 +57,6 @@ def atualizar_veiculo(dados, sessao):
         raise ErroNegocio("A quilometragem não pode ser inferior à atual.")
     executar("UPDATE veiculos SET quilometragem=%s WHERE id=%s", (km, v["id"]))
     return {"mensagem": "Quilometragem atualizada.", "veiculo": _obter(user, v["id"])}
-
 
 def listar_veiculos(dados, sessao):
     user = exigir_login(sessao)
@@ -73,7 +68,6 @@ def listar_veiculos(dados, sessao):
         veiculos = consultar("SELECT * FROM veiculos ORDER BY id")
     return {"veiculos": veiculos}
 
-
 def historico_veiculo(dados, sessao):
     user = exigir_login(sessao)
     v = _obter(user, dados.get("veiculo_id"))
@@ -84,7 +78,6 @@ def historico_veiculo(dados, sessao):
         (v["id"],),
     )
     return {"reparacoes": reparacoes}
-
 
 def remover_veiculo(dados, sessao):
     user = exigir_role(sessao, Gestor.ROLE)
@@ -107,7 +100,6 @@ SELECT_REPARACOES = (
     "JOIN utilizadores c ON c.id = r.cliente_id "
     "LEFT JOIN utilizadores m ON m.id = r.mecanico_id "
 )
-
 
 def _obter_reparacao(user, reparacao_id):
     reparacao_id = como_int(reparacao_id, "reparacao_id")
@@ -210,7 +202,6 @@ def adicionar_observacoes(dados, sessao):
     novas = f"{atuais}\n{texto}" if atuais else texto
     executar("UPDATE reparacoes SET observacoes=%s WHERE id=%s", (novas, r["id"]))
     return {"mensagem": "Observações guardadas."}
-
 
 ACOES = {
     "REGISTAR_VEICULO": registar_veiculo,
