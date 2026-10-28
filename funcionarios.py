@@ -1,4 +1,4 @@
-"""Gestão de funcionários (mecânicos e gestores). Só o gestor pode usar estas ações."""
+
 from auth import (
     ErroNegocio,
     como_int,
@@ -61,7 +61,6 @@ def remover_funcionario(dados, sessao):
 
 
 def atualizar_funcionario(dados, sessao):
-    """Campos opcionais: nome, password, role."""
     exigir_role(sessao, Gestor.ROLE)
     func = _obter_funcionario(dados.get("id"))
 
@@ -94,7 +93,6 @@ def atualizar_funcionario(dados, sessao):
 
 
 def listar_mecanicos(dados, sessao):
-    """Útil para o gestor escolher o mecânico ao atribuir uma reparação."""
     exigir_role(sessao, Gestor.ROLE)
     return {
         "mecanicos": consultar(

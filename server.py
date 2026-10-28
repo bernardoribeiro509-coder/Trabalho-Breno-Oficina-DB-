@@ -14,15 +14,12 @@ from db import criar_tabelas
 HOST = "0.0.0.0"
 PORT = 5000
 
-# Junta as ações de todos os módulos num único dicionário.
-# Quando houver um módulo de reparações, basta acrescentá-lo aqui.
 ACOES = {}
 for modulo in (auth, funcionarios, veiculos, pecas, faturas):
     ACOES.update(modulo.ACOES)
 
 
 def _serializar(obj):
-    """Converte tipos que o JSON não conhece (Decimal, datas...)."""
     if isinstance(obj, Decimal):
         return float(obj)
     return str(obj)
@@ -45,10 +42,10 @@ def processar(mensagem, sessao):
 
 def tratar_cliente(sock, endereco):
     print(f"[+] Cliente ligado: {endereco}")
-    sessao = {"utilizador": None}  # cada ligação tem a sua sessão
+    sessao = {"utilizador": None}  
     try:
         with sock, sock.makefile("r", encoding="utf-8", newline="\n") as leitura:
-            for linha in leitura:  # um pedido JSON por linha
+            for linha in leitura: 
                 linha = linha.strip()
                 if not linha:
                     continue
