@@ -90,7 +90,6 @@ def criar_tabelas():
 
 
 def apagar_tabelas():
-    """CUIDADO: apaga todos os dados. Usar só para recomeçar com o esquema novo."""
     conn = start_connection()
     try:
         with conn.cursor() as cur:

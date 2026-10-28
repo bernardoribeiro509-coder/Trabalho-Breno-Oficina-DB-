@@ -1,4 +1,4 @@
-"""Faturação e relatórios."""
+
 from auth import (
     ErroNegocio,
     PermissaoNegada,
@@ -80,7 +80,6 @@ def registar_pagamento(dados, sessao):
 
 
 def listar_faturas(dados, sessao):
-    """Gestor vê todas; cliente vê só as suas."""
     user = exigir_login(sessao)
     if user.ROLE == Gestor.ROLE:
         faturas = consultar("SELECT * FROM faturas ORDER BY id DESC")
@@ -96,7 +95,6 @@ def listar_faturas(dados, sessao):
 
 
 def ver_fatura(dados, sessao):
-    """Fatura de uma reparação (o cliente só vê as suas)."""
     user = exigir_login(sessao)
     reparacao_id = como_int(dados.get("reparacao_id"), "reparacao_id")
     rep = consultar(

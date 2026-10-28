@@ -28,7 +28,7 @@ def _obter_funcionario(id_):
 
 
 def listar_funcionarios(dados, sessao):
-    exigir_role(sessao, Gestor.ROLE)
+    exigir_role(sessao, Gestor.s)
     return {
         "funcionarios": consultar(
             "SELECT id, username, nome, role FROM utilizadores "
